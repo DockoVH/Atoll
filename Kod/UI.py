@@ -1,6 +1,10 @@
 import math
 import pygame
 import Symbol
+import Const
+import queue
+from itertools import combinations
+import GameEngine
 
 def crtaj_tablu(prozor, stranica, beli_krug, crni_krug, tabla):
     boja1 = (54, 62, 64)
@@ -9,7 +13,6 @@ def crtaj_tablu(prozor, stranica, beli_krug, crni_krug, tabla):
     r_spolja = ((stranica / 4) * prozor.get_height() * 0.15 + prozor.get_height() * 0.8) / 2
     debljina = r_spolja * math.sqrt(3) / (6 + stranica)
     r_unutra = r_spolja - debljina / math.cos(math.radians(30))
-    duzina_ostrva = int((stranica + 5 - 1) / 2)
 
     crtaj_sredinu_table(prozor, centar, r_unutra)
     crtaj_linije_tabla(prozor, centar, stranica + 4, r_unutra)
@@ -140,6 +143,8 @@ def crtaj_kamencice(prozor, stranica, r_unutra, beli_krug, crni_krug, tabla, cen
     ymin = centar[1] - (r_unutra + korak_y)
     kamencic_prikaz_offset = beli_krug.get_width() / 2
 
+    font = pygame.font.SysFont('Comic Sans MS', 25)
+
     for i, red in enumerate(tabla):
         offset_x = (i % 2) * korak_x / 2 if stranica % 2 == 1 else ((i + 1) % 2) * korak_x / 2
         y = ymin + i * korak_y
@@ -147,11 +152,14 @@ def crtaj_kamencice(prozor, stranica, r_unutra, beli_krug, crni_krug, tabla, cen
         for j, kamencic in enumerate(red):
             x = xmin + offset_x + j * korak_x
 
+            if kamencic is not None:
+                kamencic.centar = (x, y)
+
             if kamencic is not None and kamencic.zauzet:
                 if kamencic.boja == Symbol.C:
-                    prozor.blit(crni_krug, (x - kamencic_prikaz_offset, y - kamencic_prikaz_offset))
+                    prozor.blit(crni_krug, (kamencic.centar[0] - kamencic_prikaz_offset, kamencic.centar[1] - kamencic_prikaz_offset))
                 else:
-                    prozor.blit(beli_krug, (x - kamencic_prikaz_offset, y - kamencic_prikaz_offset))
+                    prozor.blit(beli_krug, (kamencic.centar[0] - kamencic_prikaz_offset, kamencic.centar[1] - kamencic_prikaz_offset))
 
 def crtaj_pocetni_meni(prozor, start, exit):
     dugme_offset_x = start.get_width() // 2
@@ -250,3 +258,46 @@ def crtaj_izbor_velicina_table(prozor, tekst_polje):
         text_prozor = font_broj.render(f'{i + 5}', False, (255, 255, 255))
         prozor.blit(tekst_polje, (xmin + i * dugme_offset, ymin))
         prozor.blit(text_prozor, (xmin + i * dugme_offset + dugme_sirina // 2 - font_size // 4, ymin + dugme_sirina // 2 - font_size // 4))
+
+def crtaj_potez_opcije(prozor, potez_opcije, kamencic_slika):
+    kamencic_prikaz = pygame.transform.scale(kamencic_slika, (int(kamencic_slika.get_width() * 0.5), int(kamencic_slika.get_width() * 0.5)))
+    kamencic_prikaz.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+    kamencic_prikaz_offset = kamencic_prikaz.get_width() // 2
+
+    for kamencic in potez_opcije:
+        prozor.blit(kamencic_prikaz, (kamencic.centar[0] - kamencic_prikaz_offset, kamencic.centar[1] - kamencic_prikaz_offset))
+
+def crtaj_prikazi_pobednika(prozor, tabla, stranica, pobednik, prvi_potez_boja, kamencic):
+    kombinacije_pocetnih_ostrva = combinations(Const.POCETNA_OSTRVA[stranica + 5][pobednik], 2)
+
+    for pocetak, kraj in kombinacije_pocetnih_ostrva:
+        duzina1 = GameEngine.bfs_perimiter(tabla, stranica, pocetak[0], kraj)
+        duzina2 = GameEngine.bfs_perimiter(tabla, stranica, pocetak[1], kraj)
+
+        duzina = min(duzina1, duzina2)
+
+        if duzina >= Const.MIN_PERIMITER if stranica < 4 else duzina >= Const.MIN_PERIMITER + 1:
+            put = GameEngine.bfs_zauzeta_polja(tabla, stranica, pocetak[0], kraj, pobednik, ukljuci_pocetak_i_kraj=True)
+
+            if len(put) > 0:
+                for i in range(len(put) - 1):
+                    pocetak = tabla[put[i][0]][put[i][1]].centar
+                    kraj = tabla[put[i + 1][0]][put[i + 1][1]].centar
+                    pygame.draw.line(prozor, (255, 0, 0), pocetak, kraj, 3)
+
+    centar = (prozor.get_width() // 2, prozor.get_height() // 2)
+    font_pobednik = pygame.font.SysFont('Comic Sans MS', 85)
+    font_izlaz = pygame.font.SysFont('Comic Sans MS', 40)
+    kamencic_prikaz = pygame.transform.scale(kamencic, (int(prozor.get_height() * 0.15), int(prozor.get_height() * 0.15)))
+
+    izlaz_prozor = font_izlaz.render('Kliknite bilo gde da bi ste izašli.', False, (255, 255, 0))
+    pobednik_prozor = font_pobednik.render('POBEDA', False, (255, 255, 255) if pobednik == Symbol.B else (0, 0, 0))
+    
+    tabla_sirina = ((stranica / 4) * prozor.get_height() * 0.15 + prozor.get_height() * 0.8)
+    pobednik_offset_x = 1.2 * pobednik_prozor.get_width() + tabla_sirina // 2
+    if pobednik != prvi_potez_boja:
+        pobednik_offset_x *= -2 / 3
+
+    prozor.blit(izlaz_prozor, (centar[0] - izlaz_prozor.get_width() // 2, prozor.get_height() - 2 * izlaz_prozor.get_height()))
+    prozor.blit(pobednik_prozor, (centar[0] - pobednik_offset_x, centar[1] -  2 * pobednik_prozor.get_height()))
+    prozor.blit(kamencic_prikaz, (centar[0] - pobednik_offset_x, centar[1]))

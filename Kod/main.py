@@ -42,6 +42,9 @@ def main_loop():
     while True:
         pokreni_igru, stranica, drugi_igrac_AI, prvi_potez_AI, prvi_potez_boja = pocetni_meni()
 
+        potez = prvi_potez_boja
+        ai_boja = prvi_potez_boja if prvi_potez_AI else GameEngine.sledeci_potez(prvi_potez_boja)
+
         if pokreni_igru:
             tabla = GameEngine.napravi_tablu(stranica)
 
@@ -62,14 +65,47 @@ def main_loop():
 
                 UI.crtaj_tablu(prozor, stranica, beli_krug_prikaz, crni_krug_prikaz, tabla)
 
-                for event in pygame.event.get():
-                    if event.type == KEYDOWN:
-                        if event.key == K_BACKSPACE:
-                            return
-                    elif event.type == QUIT:
-                        return
+                if drugi_igrac_AI and ai_boja == potez:
+                    print('AI POTEZ')
+                    potez = GameEngine.sledeci_potez(potez)
+                else:
+                    UI.crtaj_potez_opcije(prozor, GameEngine.potez_opcije(tabla), beli_krug_prikaz if potez == Symbol.B else crni_krug_prikaz)
 
+                    for event in pygame.event.get():
+                        if event.type == KEYDOWN:
+                            if event.key == K_BACKSPACE:
+                                return
+                        if event.type == MOUSEBUTTONDOWN:
+                            click_pos = pygame.mouse.get_pos()
+                            indeks = GameEngine.odredi_indeks_kamencica(tabla, click_pos, beli_krug_prikaz.get_width() // 2)
+                            if indeks is not None:
+                                if GameEngine.odigraj_potez(tabla, indeks[0], indeks[1], potez):
+                                    potez = GameEngine.sledeci_potez(potez)
+                        elif event.type == QUIT:
+                            return
+
+                if GameEngine.kraj_igre(tabla, stranica, GameEngine.sledeci_potez(potez)):
+                    potez = GameEngine.sledeci_potez(potez)
+                    print('kraj')
+                    break
+            
                 pygame.display.update()
+
+            prikazi_pobednika = True
+
+            while prikazi_pobednika:
+                UI.crtaj_tablu(prozor, stranica, beli_krug_prikaz, crni_krug_prikaz, tabla)
+                UI.crtaj_prikazi_pobednika(prozor, tabla, stranica, potez, prvi_potez_boja, beli_krug if potez == Symbol.B else crni_krug)
+                pygame.display.update()
+
+                for event in pygame.event.get():
+                        if event.type == KEYDOWN:
+                            if event.key == K_BACKSPACE:
+                                return
+                        if event.type == MOUSEBUTTONDOWN:
+                            prikazi_pobednika = False
+                        elif event.type == QUIT:
+                            return
         else:
             return
 
@@ -129,7 +165,7 @@ def pocetni_meni():
                     izbor_drugi_igrac = True
                     izbor_pocetni_meni = False
                 elif izbor_pocetni_meni and centar[0] - dugme_offset_x < clickPos[0] < centar[0] + dugme_offset_x and centar[1] + dugme_offset_y < clickPos[1] < centar[1] + 3 * dugme_offset_y:
-                    return False, -1, drugi_igrac_AI, drugi_igrac_AI, prvi_potez_AI, prvi_potez_boja
+                    return False, -1, drugi_igrac_AI, prvi_potez_AI, prvi_potez_boja
                 elif izbor_velicine_table:
                     slika_visina = tekst_polje_prikaz.get_height()
                     slika_sirina = tekst_polje_prikaz.get_width()
@@ -174,9 +210,9 @@ def pocetni_meni():
 
             if event.type == KEYDOWN:
                 if event.key == K_BACKSPACE:
-                    return False, -1, drugi_igrac_AI, drugi_igrac_AI, prvi_potez_AI, prvi_potez_boja
+                    return False, -1, drugi_igrac_AI, prvi_potez_AI, prvi_potez_boja
             elif event.type == QUIT:
-                return False, -1, drugi_igrac_AI, drugi_igrac_AI, prvi_potez_AI, prvi_potez_boja
+                return False, -1, drugi_igrac_AI, prvi_potez_AI, prvi_potez_boja
 
         pygame.display.update()
 
