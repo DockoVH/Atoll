@@ -6,6 +6,8 @@ import GameEngine
 import Symbol
 import AI
 
+import time
+
 pygame.init()
 pygame.font.init()
 prozor = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
@@ -69,7 +71,13 @@ def main_loop():
 
                 if drugi_igrac_AI and ai_boja == potez:
                     print('AI POTEZ')
-                    minmax_potez, _ = AI.minmax2(tabla, stranica, 2, ai_boja == Symbol.C)
+
+                    for x in range(5):
+                        start = time.time()
+                        minmax_potez, _ = AI.minmax(tabla, stranica, x + 1, ai_boja == Symbol.C)
+                        end = time.time()
+                        print(f'za x = {x}, potrebno je {end - start}s')
+
                     if GameEngine.odigraj_potez(tabla, minmax_potez[0], minmax_potez[1], potez):    
                         potez = GameEngine.sledeci_potez(potez)
                         greska = 0
