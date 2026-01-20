@@ -18,7 +18,7 @@ def crtaj_tablu(prozor, stranica, beli_krug, crni_krug, tabla):
     crtaj_linije_tabla(prozor, centar, stranica + 4, r_unutra)
     crtaj_okvir(prozor, centar, r_spolja, r_unutra, boja1, boja2)
 
-    crtaj_kamencice(prozor, stranica + 5, r_unutra, beli_krug, crni_krug, tabla, centar)
+    crtaj_kamencice(prozor, stranica + 5, r_unutra, beli_krug, crni_krug, tabla.tolist(), centar)
 
 def crtaj_okvir(prozor, centar, r_spolja, r_unutra, boja1, boja2):
     tacke_spolja = []
@@ -281,8 +281,8 @@ def crtaj_prikazi_pobednika(prozor, tabla, stranica, pobednik, prvi_potez_boja, 
 
             if len(put) > 0:
                 for i in range(len(put) - 1):
-                    pocetak = tabla[put[i][0]][put[i][1]].centar
-                    kraj = tabla[put[i + 1][0]][put[i + 1][1]].centar
+                    pocetak = tabla[put[i][0], put[i][1]].centar
+                    kraj = tabla[put[i + 1][0], put[i + 1][1]].centar
                     pygame.draw.line(prozor, (255, 0, 0), pocetak, kraj, 3)
 
     centar = (prozor.get_width() // 2, prozor.get_height() // 2)

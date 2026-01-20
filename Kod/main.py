@@ -4,6 +4,7 @@ import pygame._sdl2
 import UI
 import GameEngine
 import Symbol
+import AI
 
 pygame.init()
 pygame.font.init()
@@ -47,6 +48,7 @@ def main_loop():
 
         if pokreni_igru:
             tabla = GameEngine.napravi_tablu(stranica)
+            greska = 0
 
             while True:
                 if prozor_visina != prozor.get_height():
@@ -67,7 +69,16 @@ def main_loop():
 
                 if drugi_igrac_AI and ai_boja == potez:
                     print('AI POTEZ')
-                    potez = GameEngine.sledeci_potez(potez)
+                    minmax_potez, _ = AI.minmax2(tabla, stranica, 2, ai_boja == Symbol.C)
+                    if GameEngine.odigraj_potez(tabla, minmax_potez[0], minmax_potez[1], potez):    
+                        potez = GameEngine.sledeci_potez(potez)
+                        greska = 0
+                    else:
+                        greska = greska + 1
+                    
+                    if greska == 5:
+                        potez = GameEngine.sledeci_potez(potez)
+                        print('ne radi jbg')
                 else:
                     UI.crtaj_potez_opcije(prozor, GameEngine.potez_opcije(tabla), beli_krug_prikaz if potez == Symbol.B else crni_krug_prikaz)
 

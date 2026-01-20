@@ -2,10 +2,11 @@ import Const
 from Kamencic import Kamencic
 import Symbol
 import queue
+import numpy as np
 from itertools import combinations
 
 def napravi_tablu(stranica):
-    return [[None if element == '0' else napravi_kamencic(element) for element in red] for red in Const.TABLE[stranica + 5]]
+    return np.matrix([[None if element == '0' else napravi_kamencic(element) for element in red] for red in Const.TABLE[stranica + 5]])
 
 def napravi_kamencic(oznaka):
     if oznaka == '1':
@@ -20,16 +21,16 @@ def napravi_kamencic(oznaka):
     
 def odigraj_potez(tabla, i, j, potez_boja):
     if ispravan_potez(tabla, i, j):
-        tabla[i][j].boja = potez_boja
-        tabla[i][j].zauzet = True
+        tabla[i, j].boja = potez_boja
+        tabla[i, j].zauzet = True
         return True
     return  False
 
 def ispravan_potez(tabla, i, j):
-    if i < 0 or j < 0 or i > len(tabla) - 1 or j > len(tabla[0]) - 1:
+    if not (0 <= i < tabla.shape[0]) or not (0 <= j < tabla.shape[1]):
         return False
 
-    if tabla[i][j] is None or tabla[i][j].zauzet:
+    if tabla[i, j] is None or tabla[i, j].zauzet:
         return False
 
     return True
@@ -54,7 +55,7 @@ def bfs_perimiter(tabla, stranica, pocetak, kraj):
         for di, dj in Const.SUSEDNI_KAMENCICI[(cvor[0] + stranica % 2) % 2]:
             novi_cvor = (cvor[0] + di, cvor[1] + dj)
             
-            if not (0 <= novi_cvor[0] < len(tabla)) or not (0 <= novi_cvor[1] < len(tabla[0])):
+            if not (0 <= novi_cvor[0] < tabla.shape[0]) or not (0 <= novi_cvor[1] < tabla.shape[1]):
                 continue
 
             if novi_cvor in kraj:
@@ -63,10 +64,10 @@ def bfs_perimiter(tabla, stranica, pocetak, kraj):
                 kranji_cvor = novi_cvor
                 break
                 
-            if novi_cvor in poseceni or tabla[novi_cvor[0]][novi_cvor[1]] is None:
+            if novi_cvor in poseceni or tabla[novi_cvor[0], novi_cvor[1]] is None:
                 continue
 
-            if tabla[novi_cvor[0]][novi_cvor[1]].pocetni:
+            if tabla[novi_cvor[0], novi_cvor[1]].pocetni:
                 continue
 
             prethodni[novi_cvor] = cvor
@@ -76,9 +77,9 @@ def bfs_perimiter(tabla, stranica, pocetak, kraj):
             pored_pocetnog = False
             for dx, dy in Const.SUSEDNI_KAMENCICI[(novi_cvor[0] + stranica % 2) % 2]: 
                 susedni = (novi_cvor[0] + dx, novi_cvor[1] + dy)
-                if not (0 <= susedni[0] < len(tabla)) or not (0 <= susedni[1] < len(tabla[0])):
+                if not (0 <= susedni[0] < tabla.shape[0]) or not (0 <= susedni[1] < tabla.shape[1]):
                     continue
-                if tabla[susedni[0]][susedni[1]] is not None and tabla[susedni[0]][susedni[1]].pocetni:
+                if tabla[susedni[0], susedni[1]] is not None and tabla[susedni[0], susedni[1]].pocetni:
                     pored_pocetnog = True
                     break
             
@@ -115,13 +116,13 @@ def bfs_zauzeta_polja(tabla, stranica, pocetak, kraj, potez, ukljuci_pocetak_i_k
         for di, dj in Const.SUSEDNI_KAMENCICI[(cvor[0] + stranica % 2) % 2]:
             novi_cvor = (cvor[0] + di, cvor[1] + dj)
             
-            if not (0 <= novi_cvor[0] < len(tabla)) or not (0 <= novi_cvor[1] < len(tabla[0])):
+            if not (0 <= novi_cvor[0] < tabla.shape[0]) or not (0 <= novi_cvor[1] < tabla.shape[1]):
                 continue
                 
-            if novi_cvor in poseceni or tabla[novi_cvor[0]][novi_cvor[1]] is None:
+            if novi_cvor in poseceni or tabla[novi_cvor[0], novi_cvor[1]] is None:
                 continue
 
-            if not tabla[novi_cvor[0]][novi_cvor[1]].zauzet or tabla[novi_cvor[0]][novi_cvor[1]].boja != potez:
+            if not tabla[novi_cvor[0], novi_cvor[1]].zauzet or tabla[novi_cvor[0], novi_cvor[1]].boja != potez:
                 continue
 
             prethodni[novi_cvor] = cvor
@@ -152,10 +153,11 @@ def kraj_igre(tabla, stranica, potez):
     kombinacije_pocetnih_ostrva = combinations(Const.POCETNA_OSTRVA[stranica + 5][potez], 2)
 
     for pocetak, kraj in kombinacije_pocetnih_ostrva:
-        duzina1 = bfs_perimiter(tabla, stranica, pocetak[0], kraj)
-        duzina2 = bfs_perimiter(tabla, stranica, pocetak[1], kraj)
+        duzine = []
+        for x in pocetak:
+            duzine.append(bfs_perimiter(tabla, stranica, x, kraj))
 
-        duzina = min(duzina1, duzina2)
+        duzina = min(duzine)
 
         if duzina >= Const.MIN_PERIMITER if stranica < 4 else duzina >= Const.MIN_PERIMITER + 1:
             duzina_puta = len(bfs_zauzeta_polja(tabla, stranica, pocetak[0], kraj, potez))
@@ -171,12 +173,12 @@ def sledeci_potez(potez):
     return Symbol.C
 
 def odredi_indeks_kamencica(tabla, click_pos, krug_precnik):
-    for i in range(len(tabla)):
-        for j in range(len(tabla[i])):
-            if tabla[i][j] is not None and tabla[i][j].kliknut(click_pos, krug_precnik):
+    for i in range(tabla.shape[0]):
+        for j in range(tabla.shape[1]):
+            if tabla[i, j] is not None and tabla[i, j].kliknut(click_pos, krug_precnik):
                 return (i, j)
     return None
 
 def potez_opcije(tabla):
-    opcije = [ x for red in tabla for x in red if x is not None and not x.zauzet ]
-    return opcije
+    opcije = [ x for red in tabla.tolist() for x in red if x is not None and not x.zauzet ]
+    return np.array(opcije)
