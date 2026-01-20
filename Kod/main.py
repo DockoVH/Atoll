@@ -7,6 +7,8 @@ import Symbol
 import AI
 
 import time
+import cProfile, pstats, io
+from pstats import SortKey
 
 pygame.init()
 pygame.font.init()
@@ -72,11 +74,15 @@ def main_loop():
                 if drugi_igrac_AI and ai_boja == potez:
                     print('AI POTEZ')
 
-                    for x in range(5):
+                    for x in range(4):
                         start = time.time()
-                        minmax_potez, _ = AI.minmax(tabla, stranica, x + 1, ai_boja == Symbol.C)
+                        
+                        with cProfile.Profile() as pr:
+                            minmax_potez, _ = AI.minmax(tabla, stranica, x + 1, ai_boja == Symbol.C)
+                            pr.print_stats()
+
                         end = time.time()
-                        print(f'za x = {x}, potrebno je {end - start}s')
+                        print(f'za x = {x + 1}, potrebno je {end - start}s')
 
                     if GameEngine.odigraj_potez(tabla, minmax_potez[0], minmax_potez[1], potez):    
                         potez = GameEngine.sledeci_potez(potez)

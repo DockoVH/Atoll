@@ -5,6 +5,8 @@ import queue
 import numpy as np
 from itertools import combinations
 
+bfs_perimiter_cache = {}
+
 def napravi_tablu(stranica):
     return np.matrix([[None if element == '0' else napravi_kamencic(element) for element in red] for red in Const.TABLE[stranica + 5]])
 
@@ -38,6 +40,10 @@ def ispravan_potez(tabla, i, j):
 def bfs_perimiter(tabla, stranica, pocetak, kraj):
     if pocetak in kraj:
         return []
+    
+    kes_kljuc = (pocetak, tuple(kraj))
+    if kes_kljuc in bfs_perimiter_cache.keys():
+        return bfs_perimiter_cache[kes_kljuc]
     
     q = queue.Queue()
     q.put(pocetak)
@@ -93,6 +99,8 @@ def bfs_perimiter(tabla, stranica, pocetak, kraj):
         while prethodni_cvor is not pocetak:
             putanja.append(prethodni_cvor)
             prethodni_cvor = prethodni[prethodni_cvor]
+
+        bfs_perimiter_cache[kes_kljuc] = len(putanja)
     
     return len(putanja)
     

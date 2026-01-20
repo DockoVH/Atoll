@@ -6,6 +6,8 @@ from itertools import combinations
 import queue
 import copy
 
+oceni_bfs_cache = {}
+
 def kraj(tabla, stranica):
     if GameEngine.kraj_igre(tabla, stranica, Symbol.C):
         return 1000
@@ -23,14 +25,12 @@ def minmax(tabla, stranica, dubina, moj_potez, alpha=(None, -1000), beta=(None, 
 def max_value(tabla, stranica, dubina, alpha, beta, potez=None):
     kraj_rezultat = kraj(tabla, stranica)
     if abs(kraj_rezultat) == 1000:
-        print(f'max_value: return kraj_rezultat = {kraj_rezultat}')
         return (potez, kraj_rezultat)
     
     novi_potezi = nova_stanja(tabla)
 
     if dubina == 0 or novi_potezi is None or novi_potezi.shape[0] == 0:
-        ocena = oceni(tabla, stranica)
-        return (potez, ocena)
+        return (potez, oceni(tabla, stranica))
     
     for p in novi_potezi:
         stanje = copy.deepcopy(tabla)
@@ -82,9 +82,21 @@ def oceni(tabla, stranica):
     return (min_za_pobedu_c - min_za_pobedu_b) * 10
 
 def najmanje_koraka_do_pobede(tabla, stranica, potez):
+    def generisi_kes_kljuc(tabla, stranica, pocetak, kraj, potez):
+        tabla_kljuc = []
+        for idx, kamencic in np.ndenumerate(tabla):
+            if kamencic is not None and kamencic.zauzet and kamencic.boja == potez:
+                tabla_kljuc.append(idx)
+
+        return (tuple(tabla_kljuc), stranica, pocetak, tuple(kraj), potez)
+
     def bfs(tabla, stranica, pocetak, kraj, potez):
         if pocetak in kraj:
             return 0
+        
+        kes_kljuc = generisi_kes_kljuc(tabla, stranica, pocetak, kraj, potez)
+        if kes_kljuc in oceni_bfs_cache.keys():
+            return oceni_bfs_cache[kes_kljuc]
         
         q = queue.Queue()
         q.put((pocetak, 0))
@@ -118,6 +130,7 @@ def najmanje_koraka_do_pobede(tabla, stranica, potez):
                 elif not tabla[novi_cvor[0], novi_cvor[1]].zauzet:
                     q.put((novi_cvor, broj_praznih + 1))
         
+        oceni_bfs_cache[kes_kljuc] = rezultat
         return rezultat
     
     kombinacije_pocetnih_ostrva = combinations(Const.POCETNA_OSTRVA[stranica + 5][potez], 2)
