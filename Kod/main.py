@@ -6,10 +6,6 @@ import GameEngine
 import Symbol
 import AI
 
-import time
-import cProfile, pstats, io
-from pstats import SortKey
-
 pygame.init()
 pygame.font.init()
 prozor = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
@@ -73,16 +69,7 @@ def main_loop():
 
                 if drugi_igrac_AI and ai_boja == potez:
                     print('AI POTEZ')
-
-                    for x in range(4):
-                        start = time.time()
-                        
-                        with cProfile.Profile() as pr:
-                            minmax_potez, _ = AI.minmax(tabla, stranica, x + 1, ai_boja == Symbol.C)
-                            pr.print_stats()
-
-                        end = time.time()
-                        print(f'za x = {x + 1}, potrebno je {end - start}s')
+                    minmax_potez, _ = AI.minmax(tabla, stranica, 3, ai_boja == Symbol.C)
 
                     if GameEngine.odigraj_potez(tabla, minmax_potez[0], minmax_potez[1], potez):    
                         potez = GameEngine.sledeci_potez(potez)
@@ -92,7 +79,8 @@ def main_loop():
                     
                     if greska == 5:
                         potez = GameEngine.sledeci_potez(potez)
-                        print('ne radi jbg')
+                        print('Neuspešno odigran potez!')
+                        break
                 else:
                     UI.crtaj_potez_opcije(prozor, GameEngine.potez_opcije(tabla), beli_krug_prikaz if potez == Symbol.B else crni_krug_prikaz)
 
